@@ -1,60 +1,80 @@
+#!/usr/bin/env python3
 '''Daniel Craig'''
 '''I PlEdGe My HoNoR tHaT i HaVe AbIdEd By ThE sTeVeNs HoNoR sYsTeM'''
 
-from tkinter import *
+import tkinter as tk
 import time
 import random
 import speedometer
+import tachometer
+import serial
+import imutils
+import cv2
+from PIL import Image, ImageTk
 
-#Tkinter, initialize all variables
-root=Tk()
-screen=Canvas(root,height=576,width=1024)
-speedtext = Label(text="0")
-rpmtext=Label(text='0',fg="black")
-speedtext.config(font=("Arial",42))
-rpmtext.config(font=("Arial",60))
-speedtext.place(rely=0.43,relx=0.132,anchor='w')
-rpmtext.place(rely=0.9,relx=1.0,anchor='e')
-screen.pack()
-screen.create_oval(30,30,300,300,tag="oval")
-screen.create_oval(1000,30,720,300,tag="tachoval")
-A=speedometer.Speedometer(screen,"oval",Range=(40,0)) #speedometer
-#B=speedometer.Speedometer(screen,"tachoval",Range=(7,0))  #tachometer
-#for next week, look at speedometer
-#If that is easy, look into open webcam using tkinter for webcam feed
+'''Tkinter, initialize all variables'''
 
-'''
-Camera in the center.
-speedometer on the left
-below speedometer -> Tachometer
-Right side - digital number readout
-left side - engine rpm. lower left - number. upper left - dial
-right side - miles per hour. Lower right - number. Upper right - dial'''
+root=tk.Tk()
+root.attributes("-zoomed",True)
 
-'''
-Try to get webcam feed
-Or work on tachometer
-Only show every other number to make it easier to read
-'''
+#Video capture
+video = cv2.VideoCapture(0)
+video.set(3, 640/2);
+video.set(4, 480/2);
+video.set(cv2.CAP_PROP_FPS, 40)
+video.set(cv2.CAP_PROP_BUFFERSIZE, 1);
 
-testSpeed=1
-#testSpeed = int(input())
-#print('speed:' +str(testSpeed))
+#Screen
+screen=tk.Canvas(root)
+
+#Labels
+speedtext = tk.Label(text="0")
+rpmtext = tk.Label(text='0',fg="black")
+fourwheeldrive = tk.Label(text="Off",fg="red")
+speedtext.config(font=("Arial",40))
+rpmtext.config(font=("Arial",40))
+speedtext.place(rely=0.90,relx=0.02,anchor='w')
+rpmtext.place(rely=0.90,relx=.98,anchor='e')
+fourwheeldrive.config(font=("Arial",35))
+fourwheeldrive.place(relx=0.5, rely=0.85, anchor='s')
+
+#Screen final
+screen.pack(fill=tk.BOTH, expand=True)
+screen.create_oval(30,30,200,200,tag="oval")
+screen.create_oval(640-200,30,640-30,200,tag="tachoval")
+
+#Speedometer/tachometer ovals
+A=speedometer.Speedometer(screen,"oval",Range=(40,0))
+B=tachometer.Tachometer(screen,"tachoval",Range=(5000,0))
+
+#Label for camera spot
+lmain = tk.Label(root)
+lmain.place(relx=0.5,rely=0.5,anchor='c')
+
+releasedVideo=False
+testSpeed=0
+tachSpeed=1000
 def getSpeed(increment):
     return int(20+increment)
 
-
-#def updateLabel(speedInput):      #Input for speed goes here
 while(True):
-    time.sleep(0.9)
-    speedtext.config(text=str(testSpeed))
-    rpmtext.config(text=str(random.randint(0,75))+" rpm")
-    A.moveto(testSpeed*1.05,"oval")
-    #B.moveto(testSpeed*1.05,"tachoval")
+    _, frame = video.read()                           #Read Video
+    frame = cv2.flip(frame,1)
+    cv2image = cv2.cvtColor(frame,cv2.COLOR_BGR2RGBA)
+    img = Image.fromarray(cv2image)
+    img = img.resize((200,200),Image.LANCZOS)
+    imgtk = ImageTk.PhotoImage(image=img)
+    lmain.imgtk = imgtk
+    lmain.configure(image=imgtk)
+    value=20
+    randSpeed=int(random.randint(0,41))
+    speedtext.config(text=str(randSpeed)+' mph')
+    rpmtext.config(text=str(tachSpeed)+" rpm")
+    A.moveto(randSpeed,"oval")
+    B.moveto(tachSpeed,"tachoval")
+    fourwheeldrive.config(text="4WD: On")
+    fourwheeldrive.config(fg="green")
     screen.update()
-    testSpeed+=1
 
-
-
-#updateLabel(44)
-#screen.mainloop()
+video.release()
+screen.mainloop()
