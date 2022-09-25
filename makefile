@@ -11,7 +11,7 @@ SRC      := $(wildcard source/*.cpp)
 EXT      :=
 
 CXX += g++
-LDFLAGS += -lstdc++ -lm `pkg-config --libs sdl2`
+LDFLAGS += -lstdc++ -lm `pkg-config --libs sdl2 opencv4` 
 EXT += .out
 
 OBJECTS  := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)

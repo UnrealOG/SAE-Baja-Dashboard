@@ -1,8 +1,12 @@
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_video.h>
-#include <iostream>
+#include <opencv2/opencv.hpp>
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_video.h>
+
+#include <iostream>
+
+using namespace cv;
 
 int main() {
 
@@ -11,7 +15,7 @@ int main() {
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL failed to initizalize: " << SDL_GetError() << "\n";
-        return -1;
+        return 1;
     }
 
     window =
@@ -20,7 +24,7 @@ int main() {
     if (!window) {
         std::cerr << "SDL window could not be created: " << SDL_GetError()
                   << "\n";
-        return -1;
+        return 1;
     }
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -28,6 +32,13 @@ int main() {
         std::cerr << "SDL renderer could not be creat: " << SDL_GetError()
                   << "\n";
     }
+
+    VideoCapture capture("/dev/video0");
+    Mat frame;
+    capture >> frame;
+    SDL_Texture* tex =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_BGR24,
+                          SDL_TEXTUREACCESS_STREAMING, frame.cols, frame.rows);
 
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RenderClear(renderer);
@@ -39,9 +50,17 @@ int main() {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT)
                 quit = true;
+
+            capture >> frame;
+            SDL_UpdateTexture(tex, NULL, (void*)frame.data, frame.step1());
+
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, tex, NULL, NULL);
+            SDL_RenderPresent(renderer);
         }
     }
 
+    SDL_DestroyTexture(tex);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
